@@ -1,6 +1,5 @@
 const config = require("dotenv").config();
 import * as Sentry from "@sentry/node";
-import * as Tracing from "@sentry/tracing";
 import QueueService from "./services/queue";
 import StorageService from "./services/storage";
 import sleep from "./utils/sleep";
@@ -12,10 +11,6 @@ Sentry.init({
 
 (async () => {
     while (true) {
-        const transaction = Sentry.startTransaction({
-            op: "polling",
-            name: "Polling AWS SQS",
-        });
         try {
             console.log(`Querying new messages...`);
             const messages = await QueueService.getRecentMessages();
@@ -23,16 +18,21 @@ Sentry.init({
             for (const message of messages) {
                 console.log(`Starting processing ${message.MessageId}...`);
                 const messageBody = JSON.parse(message.Body);
-                console.log(`Start uploading ${messageBody.path}...`);
-                await StorageService.uploadImage(messageBody.path);
-                console.log(`Upload finished. Deleting message from queue...`);
+                if (messageBody.paths && messageBody.paths.length > 0) {
+                    for (const path of messageBody.paths) {
+                        console.log(`Start uploading ${path}...`);
+                        await StorageService.uploadImage(path);
+                        console.log(
+                            `Upload finished. Deleting message from queue...`
+                        );
+                    }
+                }
                 await QueueService.deleteMessage(message.ReceiptHandle);
                 console.log(`Processing of ${message.MessageId} finished.`);
             }
         } catch (e) {
             Sentry.captureException(e);
         } finally {
-            transaction.finish();
             await sleep(30000);
         }
     }

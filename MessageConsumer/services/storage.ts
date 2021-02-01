@@ -5,6 +5,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 class Storage {
     private client: S3Client;
     private bucketName: string;
+    private folderName: string;
     constructor() {
         this.client = new S3Client({
             credentials: {
@@ -15,6 +16,7 @@ class Storage {
             maxAttempts: 3,
         });
         this.bucketName = process.env.AWS_S3_BUCKET_NAME;
+        this.folderName = process.env.AWS_S3_FOLDER_NAME;
     }
 
     public async uploadImage(filePath: string) {
@@ -25,7 +27,7 @@ class Storage {
                 new PutObjectCommand({
                     Bucket: this.bucketName,
                     Body: stream,
-                    Key: fileName,
+                    Key: `${this.folderName}/${fileName}`,
                 })
             );
         } finally {
