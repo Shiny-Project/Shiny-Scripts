@@ -49,6 +49,6 @@ const connect = (): Promise<any> => {
             Sentry.captureException(e);
             console.log(e);
         }
-        await sleep(10000);
+        await sleep(30000);
     }
 })();
