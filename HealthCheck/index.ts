@@ -25,6 +25,7 @@ const connect = (): Promise<any> => {
 
 (async () => {
     let counter = 0;
+    let errorCounter = 0;
     while (true) {
         try {
             console.log("Start connecting to websocket server...");
@@ -40,13 +41,18 @@ const connect = (): Promise<any> => {
             ]);
             socket.close();
             counter++;
+            errorCounter = 0;
             if (counter === 10) {
                 counter = 0;
                 console.log("Sending metrics to database...");
                 await DatabaseService.flush();
             }
         } catch (e) {
-            Sentry.captureException(e);
+            errorCounter++;
+            if (errorCounter === 20) {
+                // 持续连接失败，上报异常
+                Sentry.captureException(e);
+            }
             console.log(e);
         }
         await sleep(30000);
