@@ -51,6 +51,7 @@ const connect = (): Promise<any> => {
             errorCounter++;
             if (errorCounter === 20) {
                 // 持续连接失败，上报异常
+                errorCounter = 0;
                 Sentry.captureException(e);
             }
             console.log(e);
